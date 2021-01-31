@@ -5,70 +5,67 @@
 
 using namespace std;
 
-class Item{
-    // The value of the item, weight of the item and the original index of the item.
-    int value, weight, index;
+// Dynamically computes the maximum value.
+const int KS(int n, int C, int *& dynMatrix, int *& values, int *& weights){
+    int result = 0;
+    // If the value is already computed, return it.
+    if(dynMatrix[(n-1)*(C-1)] != 0) result = dynMatrix[(n-1)*(C-1)];
 
-    public:
-    // Constructor.
-    Item(int value, int weight, int index){ this->value = value; this->weight = weight; this->index = index; }
+    if(n == 0 || C == 0) result = 0;
+    else if(weights[n-1] > C) result = KS(n-1,C,dynMatrix, values, weights);
+    else{
+        int take = values[n-1] + KS(n-1,C-weights[n-1], dynMatrix, values, weights);
+        int pass = KS(n-1, C, dynMatrix, values, weights);
+        result = max(take,pass);
+    }
 
-    // Getters.
-    const int getValue() const { return value; }
-    const int getWeight() const { return weight; }    
-    const int getIndex() const { return index; }     
-
-    // Operators.
-    bool operator<(const Item& i) const { return value < i.getValue(); }
-};
+    dynMatrix[n*C] = result;
+    return result;
+}
 
 int main(void){
-    // Vector of generated knapsacks.
-    vector<vector<Item>> R;
-    // Capacity, Number of Objects, Value, Weight, Total Acquired Weight.
-    int c, n, v, w;
-    int t_w = 0;
+    // Capacity, Number of Objects, Value, Weight, Resulting Value.
+    int C, n, v, w, result;
+    vector<int> results;
     ifstream in("sample_in.in");
     cin.rdbuf(in.rdbuf());
 
 
-    // Reading from Kattis.
-    while (cin >> c) {
-        // Current knapsack, current list of all items.
-        vector<Item> K, I;
-        // Read meta.
+    // Reading from standard input.
+    // Start by reading capacity.
+    while (cin >> C) {
+        // Then read the number of items.
         cin >> n;
-        // Read items.
+
+        // Construct a dynamic programming Matrix.
+        int * dynMatrix = new int [n*C];
+        int * values = new int [n];
+        int * weights = new int [n];        
+
+        // Read the items value and weight.
         for(int i=0; i < n; i++){
-            cin >> v;
+            cin >> v;            
             cin >> w;
-            I.push_back(Item(v,w,i));
-        }
-        
-        // Sort with highest value first.
-        sort(I.rbegin(),I.rend());
-
-        // Greedily pick the best items.
-        for(int i=0; i < n; i++){
-            if(t_w + I[i].getWeight() == c){ K.push_back(I[i]); t_w += I[i].getWeight(); break; } // Break if we're full.
-            if(t_w + I[i].getWeight() < c){ K.push_back(I[i]); t_w += I[i].getWeight(); } // Add if we're not.
+            values[i] = v;
+            weights[i] = w;
         }
 
-        // Append the current knapsack to the knapsack matrix and reset the total weight.
-        R.push_back(K);
-        t_w = 0;
+
+        // Dynamically solve the problem.
+        result = KS(n,C, dynMatrix, values, weights);
+
+        // Store the result in the array of results.
+        results.push_back(result);
+
+        // Cleanup
+        delete[] dynMatrix;
+        delete[] values;
+        delete[] weights;
     }
 
-    // Print number of picked objects.
-    for(int i=0; i < R.size(); i++)
-        cout << R[i].size() << endl;
-    
-    // Print the picked objects.
-    for(int i=0; i < R.size(); i++){
-        for(int j=0; j < R[i].size(); j++)
-            cout << R[i][j].getIndex() << " ";
-        cout << endl;
-    }
+    // Print to standard output.
+    for(int i=0; i < results.size(); i++)
+        cout << "Test " << i+1 << " result: " << results[i] << endl;
 
     // Terminate the program.
     return 0;
